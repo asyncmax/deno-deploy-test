@@ -1,9 +1,12 @@
-import { serve } from "https://deno.land/std@0.145.0/http/server.ts";
+import {
+  serve,
+  type ConnInfo
+} from "https://deno.land/std@0.145.0/http/server.ts";
 
-let cur_ticks = 0;
+let process_age = 0;
 
 setInterval(() => {
-  cur_ticks++
+  process_age++
 }, 1000);
 
 function get_headers(req: Request, indent = "  ") {
@@ -22,13 +25,19 @@ function get_env(indent = "  ") {
   return env.map(s => indent + s).join("\n")
 }
 
-serve(req => {
+function get_remote_addr(conn_info: ConnInfo): string {
+  let addr = conn_info.remoteAddr as Deno.NetAddr;
+  return `${addr.hostname}:${addr.port}`;
+}
+
+serve((req, conn_info) => {
   let dir = Deno.cwd()
   let content = [
     `headers:\n${get_headers(req)}`,
     `env:\n${get_env()}`,
+    `client_ip: ${get_remote_addr(conn_info)}`,
     `Deno.cwd: ${dir}`,
-    `cur_ticks: ${cur_ticks}`
+    `process_age: ${process_age}`,
   ].join("\n");
 
   return new Response(content, {
